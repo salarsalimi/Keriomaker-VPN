@@ -5,8 +5,10 @@ from tkinter import Text
 import subprocess
 import os
 import re
+import time
 
-ptime = 10000000
+
+connection = [False]
 
 def ping_ip(ip_2_check):
     try:
@@ -22,6 +24,7 @@ def ping_ip(ip_2_check):
     
     f = open(".output.txt", "r")
     ptext = str(f.readlines())
+    f.close()
     pfind = re.findall("time=... ms",ptext)
     ptime = 100000000
     for i in pfind:
@@ -67,14 +70,44 @@ fram4.pack(pady=10, padx=30)
 
 def getTextInput():   # Method Run when button is pressed
    
-    try:
-        bashCommand = "echo " + passWord.get() + " | openconnect -u " + userName.get() + " --passwd-on-stdin \
-                --reconnect-timeout 10 c10.serverkm.xyz > .connectiontest.txt"
-        os.system(bashCommand)
-        
+    if connection[0]:
+        try:
+            os.system("ps -eo pid,comm | grep openconnect > .pid.txt")
+            fff = open(".pid.txt","r")
+            ttt = str(fff.readlines())
+            fff.close()
+            pids = re.findall("\d.*\d",ttt)
+            for i in pids:
+                try:
+                    os.system("kill -9 " + i)
+                except:
+                    pass
+            btnRead['text'] = "Connect"
+            connection[0] = False
+        except:
+            pass
+    else: 
+        try:
+            os.system("echo " " > .connectiontest.txt")
+            bashCommand = "echo " + passWord.get() + " | openconnect -u " + userName.get() + " --passwd-on-stdin \
+                    --reconnect-timeout 10 c10.serverkm.xyz >> .connectiontest.txt &"
+            os.system(bashCommand)
+            time.sleep(10)
+            
 
-    except subprocess.CalledProcessError:
-        response = None
+        except subprocess.CalledProcessError:
+            response = None
+
+        ff = open(".connectiontest.txt","r")
+        tt = str(ff.readlines())
+        ff.close()
+        isconnected = re.search("connected",tt)
+        
+        if isconnected:
+            btnRead['text'] = "Disconnect"
+            connection[0] = True
+        else:
+            btnRead['text'] = "Try Again"
 
 
    # uName = userName.get()
@@ -136,7 +169,7 @@ label1 = tk.Label(fram3, text='Speed')
 label1.pack(side='left', padx=10)
 
 ########  Connect Button defenition
-btnRead = tk.Button(fram4, height=1, width=10, text='Read', 
+btnRead = tk.Button(fram4, height=1, width=10, text='Connect', 
                     command=getTextInput)
 btnRead.pack()
 
